@@ -30,24 +30,22 @@ exports.getOneBook = async (req, res) => {
 };
 
 /* Get the 3 best rated books */
-exports.bestRating = async (req, res) => {
-  try {
-    const books = await Book.find().sort({ averageRating: "desc" }).limit(3);
-    res.status(200).json(books);
-  } catch (error) {
-    res.status(400).json({ error });
-  }
-};
+exports.bestRating = (req, res , next) => {
+  Book.find()
+    .sort({ averageRating : 'desc'})
+    .then((books) => res.status(200).json(books.splice(0, 3)))
+    .catch((error) => res.status(400).json({error}))
+}
 
 /* Post a new book */
-/* exports.createBook = (req, res, next) => {
+exports.createBook = (req, res, next) => {
   const bookObject = JSON.parse(req.body.book);
   delete bookObject._id;
   delete bookObject._userId;
   const book = new Book({
       ...bookObject,
       userId: req.auth.userId,
-      imageUrl: req.file // Ajout de l'URL de l'image si elle existe
+      imageUrl: req.file
           ? `${req.protocol}://${req.get("host")}/images/${req.file.filename}`
           : null,
   });
@@ -59,7 +57,7 @@ exports.bestRating = async (req, res) => {
       .catch((error) => {
           res.status(400).json({ error });
       });
-}; */
+};
 
 /* Update one book datas */
 
