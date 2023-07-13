@@ -1,4 +1,4 @@
-const sharp = require('sharp');
+/* const sharp = require('sharp');
 const fs = require('fs').promises;
 
 module.exports = async (req, res, next) => {
@@ -20,4 +20,4 @@ module.exports = async (req, res, next) => {
   }
 
   next();
-};
+}; */

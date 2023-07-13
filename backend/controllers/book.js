@@ -70,24 +70,42 @@ exports.postBook = (req, res, next) => {
 
 /* KO Update one book datas */
 
-/* exports.modifyBook = async (req, res, next) => {
+exports.modifyBook = async (req, res, next) => {
   try {
-    const book = await Book.findOne({ _id: req.params.id });
+    const book = await Book.findById(req.params.id);
 
-    if (book.userId !== req.auth.userId) {
-      return res
-        .status(403)
-        .json({
-          message: "User not authorized to modify books created by others",
-        });
-    }
     if (!book) {
       return res.status(404).json({ message: "Book not found" });
     }
+
+    if (book.userId.toString() !== req.auth.userId) {
+      return res.status(403).json({
+        message: "User not authorized to modify books created by others",
+      });
+    }
+
+    const bookObject = {};
+
+    if (req.file) {
+      bookObject.imageUrl = `${req.protocol}://${req.get("host")}/images/${
+        req.file.filename
+      }`;
+    }
+
+    Object.assign(bookObject, req.body);
+    delete bookObject.userId;
+
+    await Book.findByIdAndUpdate(
+      req.params.id,
+      { $set: bookObject },
+      { new: true }
+    );
+
+    res.status(200).json({ message: "Book modified!" });
   } catch (error) {
     return res.status(500).json({ error });
   }
-}; */
+};
 
 /* Delete one book */
 exports.deleteBook = async (req, res, next) => {

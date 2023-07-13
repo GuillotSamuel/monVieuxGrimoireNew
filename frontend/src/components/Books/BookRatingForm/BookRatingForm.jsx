@@ -30,6 +30,11 @@ function BookRatingForm({
     if (!connectedUser || !auth) {
       navigate(APP_ROUTES.SIGN_IN);
     }
+
+    if (typeof userId === 'undefined') {
+      // L'utilisateur ne peut pas poster de rating sans un userId valide
+      return;
+    }
     const update = await rateBook(id, userId, rating);
     console.log(update);
     if (update) {
@@ -55,10 +60,14 @@ function BookRatingForm({
 BookRatingForm.propTypes = {
   rating: PropTypes.number.isRequired,
   setRating: PropTypes.func.isRequired,
-  userId: PropTypes.string.isRequired,
+  userId: PropTypes.string,
   setBook: PropTypes.func.isRequired,
   id: PropTypes.string.isRequired,
   userRated: PropTypes.bool.isRequired,
+};
+
+BookRatingForm.defaultProps = {
+  userId: undefined,
 };
 
 export default BookRatingForm;
