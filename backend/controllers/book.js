@@ -60,18 +60,24 @@ exports.postBook = (req, res, next) => {
     .toFile(imagePath.replace(/\.[^/.]+$/, ".webp"), (err) => {
       if (err) {
         console.log(err);
-        return res.status(500).json({ error: "Failed to convert the image to WebP" });
+        return res
+          .status(500)
+          .json({ error: "Failed to convert the image to WebP" });
       }
 
       bookObject.imageUrl = req.file
-        ? `${req.protocol}://${req.get("host")}/images/${req.file.filename.replace(/\.[^/.]+$/, ".webp")}`
+        ? `${req.protocol}://${req.get(
+            "host"
+          )}/images/${req.file.filename.replace(/\.[^/.]+$/, ".webp")}`
         : null;
 
       if (req.file) {
         fs.unlink(imagePath, (err) => {
           if (err) {
             console.log(err);
-            return res.status(500).json({ error: "Failed to delete the existing image" });
+            return res
+              .status(500)
+              .json({ error: "Failed to delete the existing image" });
           }
 
           saveBook();
@@ -98,7 +104,6 @@ exports.postBook = (req, res, next) => {
   }
 };
 
-
 /* Update one book datas */
 
 exports.modifyBook = async (req, res, next) => {
@@ -118,7 +123,9 @@ exports.modifyBook = async (req, res, next) => {
     const bookObject = req.file
       ? {
           ...JSON.parse(req.body.book),
-          imageUrl: `${req.protocol}://${req.get("host")}/images/${req.file.filename}`,
+          imageUrl: `${req.protocol}://${req.get("host")}/images/${
+            req.file.filename
+          }`,
         }
       : { ...req.body };
     delete bookObject._userId;
@@ -128,7 +135,9 @@ exports.modifyBook = async (req, res, next) => {
       fs.unlink(`images/${existingImageFilename}`, (err) => {
         if (err) {
           console.log(err);
-          return res.status(500).json({ error: "Failed to delete the existing image" });
+          return res
+            .status(500)
+            .json({ error: "Failed to delete the existing image" });
         }
       });
     }
@@ -141,16 +150,23 @@ exports.modifyBook = async (req, res, next) => {
       .toFile(imagePath.replace(/\.[^/.]+$/, ".webp"));
 
     bookObject.imageUrl = req.file
-      ? `${req.protocol}://${req.get("host")}/images/${req.file.filename.replace(/\.[^/.]+$/, ".webp")}`
+      ? `${req.protocol}://${req.get(
+          "host"
+        )}/images/${req.file.filename.replace(/\.[^/.]+$/, ".webp")}`
       : null;
 
-    await Book.updateOne({ _id: req.params.id }, { ...bookObject, _id: req.params.id });
+    await Book.updateOne(
+      { _id: req.params.id },
+      { ...bookObject, _id: req.params.id }
+    );
 
     if (req.file) {
       fs.unlink(imagePath, (err) => {
         if (err) {
           console.log(err);
-          return res.status(500).json({ error: "Failed to delete the existing image" });
+          return res
+            .status(500)
+            .json({ error: "Failed to delete the existing image" });
         }
 
         res.status(200).json({ message: "Book modified!" });
@@ -162,7 +178,6 @@ exports.modifyBook = async (req, res, next) => {
     return res.status(500).json({ error });
   }
 };
-
 
 /* Delete one book */
 exports.deleteBook = async (req, res, next) => {
