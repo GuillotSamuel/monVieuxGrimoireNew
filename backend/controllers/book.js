@@ -123,9 +123,7 @@ exports.modifyBook = async (req, res, next) => {
     const bookObject = req.file
       ? {
           ...JSON.parse(req.body.book),
-          imageUrl: `${req.protocol}://${req.get("host")}/images/${
-            req.file.filename
-          }`,
+          imageUrl: `${req.protocol}://${req.get("host")}/images/${req.file.filename}`,
         }
       : { ...req.body };
     delete bookObject._userId;
@@ -135,9 +133,7 @@ exports.modifyBook = async (req, res, next) => {
       fs.unlink(`images/${existingImageFilename}`, (err) => {
         if (err) {
           console.log(err);
-          return res
-            .status(500)
-            .json({ error: "Failed to delete the existing image" });
+          return res.status(500).json({ error: "Failed to delete the existing image" });
         }
       });
     }
@@ -150,34 +146,37 @@ exports.modifyBook = async (req, res, next) => {
       .toFile(imagePath.replace(/\.[^/.]+$/, ".webp"));
 
     bookObject.imageUrl = req.file
-      ? `${req.protocol}://${req.get(
-          "host"
-        )}/images/${req.file.filename.replace(/\.[^/.]+$/, ".webp")}`
+      ? `${req.protocol}://${req.get("host")}/images/${req.file.filename.replace(/\.[^/.]+$/, ".webp")}`
       : null;
 
-    await Book.updateOne(
-      { _id: req.params.id },
-      { ...bookObject, _id: req.params.id }
-    );
-
-    if (req.file) {
+    if (imagePath) {
       fs.unlink(imagePath, (err) => {
         if (err) {
           console.log(err);
-          return res
-            .status(500)
-            .json({ error: "Failed to delete the existing image" });
+          return res.status(500).json({ error: "Failed to delete the uploaded image" });
         }
 
-        res.status(200).json({ message: "Book modified!" });
+        saveBook();
       });
     } else {
-      res.status(200).json({ message: "Book modified!" });
+      saveBook();
+    }
+
+    async function saveBook() {
+      try {
+        await Book.updateOne({ _id: req.params.id }, { ...bookObject, _id: req.params.id });
+        res.status(200).json({ message: "Book modified!" });
+      } catch (error) {
+        console.log(error);
+        return res.status(500).json({ error });
+      }
     }
   } catch (error) {
     return res.status(500).json({ error });
   }
 };
+
+
 
 /* Delete one book */
 exports.deleteBook = async (req, res, next) => {
