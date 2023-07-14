@@ -1,5 +1,6 @@
 const Book = require("../models/book");
 const fs = require("fs");
+const sharp = require("sharp");
 
 /* Get all books */
 exports.getAllBooks = async (req, res) => {
@@ -84,28 +85,31 @@ exports.modifyBook = async (req, res, next) => {
       });
     }
 
-    const bookObject = {};
+    const bookObject = req.file
+      ? {
+          ...JSON.parse(req.body.book),
+          imageUrl: `${req.protocol}://${req.get("host")}/images/${
+            req.file.filename
+          }`,
+        }
+      : { ...req.body };
+    delete bookObject._userId;
 
+    const existingImageFilename = book.imageUrl.split("/images/")[1];
     if (req.file) {
-      bookObject.imageUrl = `${req.protocol}://${req.get("host")}/images/${
-        req.file.filename
-      }`;
+      fs.unlink(`images/${existingImageFilename}`, (err) => {
+        if (err) console.log(err);
+      });
     }
 
-    Object.assign(bookObject, req.body);
-    delete bookObject.userId;
-
-    await Book.findByIdAndUpdate(
-      req.params.id,
-      { $set: bookObject },
-      { new: true }
-    );
+    await Book.updateOne({ _id: req.params.id }, { ...bookObject, _id: req.params.id });
 
     res.status(200).json({ message: "Book modified!" });
   } catch (error) {
     return res.status(500).json({ error });
   }
 };
+
 
 /* Delete one book */
 exports.deleteBook = async (req, res, next) => {
