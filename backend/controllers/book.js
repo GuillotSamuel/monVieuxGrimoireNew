@@ -51,25 +51,55 @@ exports.postBook = (req, res, next) => {
   const bookObject = JSON.parse(req.body.book);
   delete bookObject._id;
   delete bookObject._userId;
-  const book = new Book({
-    ...bookObject,
-    userId: req.auth.userId,
-    imageUrl: req.file
-      ? `${req.protocol}://${req.get("host")}/images/${req.file.filename}`
-      : null,
-  });
 
-  book
-    .save()
-    .then(() => {
-      res.status(201).json({ message: "New book saved" });
-    })
-    .catch((error) => {
-      res.status(400).json({ error });
+  const imagePath = req.file ? req.file.path : null;
+
+  sharp(imagePath)
+    .resize({ width: 500, height: 500 })
+    .toFormat("webp")
+    .toFile(imagePath.replace(/\.[^/.]+$/, ".webp"), (err) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).json({ error: "Failed to convert the image to WebP" });
+      }
+
+      bookObject.imageUrl = req.file
+        ? `${req.protocol}://${req.get("host")}/images/${req.file.filename.replace(/\.[^/.]+$/, ".webp")}`
+        : null;
+
+      if (req.file) {
+        fs.unlink(imagePath, (err) => {
+          if (err) {
+            console.log(err);
+            return res.status(500).json({ error: "Failed to delete the existing image" });
+          }
+
+          saveBook();
+        });
+      } else {
+        saveBook();
+      }
     });
+
+  function saveBook() {
+    const book = new Book({
+      ...bookObject,
+      userId: req.auth.userId,
+    });
+
+    book
+      .save()
+      .then(() => {
+        res.status(201).json({ message: "New book saved" });
+      })
+      .catch((error) => {
+        res.status(400).json({ error });
+      });
+  }
 };
 
-/* KO Update one book datas */
+
+/* Update one book datas */
 
 exports.modifyBook = async (req, res, next) => {
   try {
@@ -98,7 +128,10 @@ exports.modifyBook = async (req, res, next) => {
     const existingImageFilename = book.imageUrl.split("/images/")[1];
     if (req.file) {
       fs.unlink(`images/${existingImageFilename}`, (err) => {
-        if (err) console.log(err);
+        if (err) {
+          console.log(err);
+          return res.status(500).json({ error: "Failed to delete the existant image"})
+        }
       });
     }
 
