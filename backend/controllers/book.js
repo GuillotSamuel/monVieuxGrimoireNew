@@ -55,7 +55,7 @@ exports.postBook = (req, res, next) => {
   const imagePath = req.file ? req.file.path : null;
 
   sharp(imagePath)
-    .resize({ width: 500, height: 500 })
+    .resize({ width: 206, height: 260 })
     .toFormat("webp")
     .toFile(imagePath.replace(/\.[^/.]+$/, ".webp"), (err) => {
       if (err) {
@@ -118,9 +118,7 @@ exports.modifyBook = async (req, res, next) => {
     const bookObject = req.file
       ? {
           ...JSON.parse(req.body.book),
-          imageUrl: `${req.protocol}://${req.get("host")}/images/${
-            req.file.filename
-          }`,
+          imageUrl: `${req.protocol}://${req.get("host")}/images/${req.file.filename}`,
         }
       : { ...req.body };
     delete bookObject._userId;
@@ -130,14 +128,36 @@ exports.modifyBook = async (req, res, next) => {
       fs.unlink(`images/${existingImageFilename}`, (err) => {
         if (err) {
           console.log(err);
-          return res.status(500).json({ error: "Failed to delete the existant image"})
+          return res.status(500).json({ error: "Failed to delete the existing image" });
         }
       });
     }
 
+    const imagePath = req.file ? req.file.path : null;
+
+    await sharp(imagePath)
+      .resize({ width: 206, height: 260 })
+      .toFormat("webp")
+      .toFile(imagePath.replace(/\.[^/.]+$/, ".webp"));
+
+    bookObject.imageUrl = req.file
+      ? `${req.protocol}://${req.get("host")}/images/${req.file.filename.replace(/\.[^/.]+$/, ".webp")}`
+      : null;
+
     await Book.updateOne({ _id: req.params.id }, { ...bookObject, _id: req.params.id });
 
-    res.status(200).json({ message: "Book modified!" });
+    if (req.file) {
+      fs.unlink(imagePath, (err) => {
+        if (err) {
+          console.log(err);
+          return res.status(500).json({ error: "Failed to delete the existing image" });
+        }
+
+        res.status(200).json({ message: "Book modified!" });
+      });
+    } else {
+      res.status(200).json({ message: "Book modified!" });
+    }
   } catch (error) {
     return res.status(500).json({ error });
   }
